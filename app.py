@@ -348,7 +348,6 @@ def exportar_excel():
         download_name=nombre,
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
-
 @app.route("/importar_excel", methods=["GET", "POST"])
 @login_required
 def importar_excel():
@@ -367,46 +366,70 @@ def importar_excel():
 
         for fila in ws.iter_rows(min_row=2, values_only=True):
 
-            if not fila[0]:
+            print(fila)
+
+            if not fila:
                 continue
 
             try:
-                fecha = fila[0]
+
+                fecha = fila[1]
+
+                if fecha is None:
+                    continue
 
                 if isinstance(fecha, str):
-                    fecha = datetime.strptime(
-                        fecha,
-                        "%d/%m/%Y"
-                    ).date()
+
+                    formatos = [
+                        "%d/%m/%Y",
+                        "%Y-%m-%d"
+                    ]
+
+                    fecha_convertida = None
+
+                    for formato in formatos:
+                        try:
+                            fecha_convertida = datetime.strptime(
+                                fecha,
+                                formato
+                            ).date()
+                            break
+                        except ValueError:
+                            pass
+
+                    if fecha_convertida is None:
+                        print(
+                            f"No se pudo convertir la fecha: {fecha}"
+                        )
+                        continue
+
+                    fecha = fecha_convertida
+
+                elif isinstance(fecha, datetime):
+                    fecha = fecha.date()
 
                 gasto = Gasto(
                     fecha=fecha,
-                    pagado_a=fila[1] or "",
-                    concepto=fila[2] or "",
-                    observaciones=fila[3] or "",
-                    responsable=fila[4] or "",
-                    importe=float(fila[5] or 0)
+                    pagado_a=fila[2] or "",
+                    concepto=fila[3] or "",
+                    observaciones=fila[4] or "",
+                    responsable=fila[5] or "",
+                    importe=float(fila[6] or 0),
+                    usuario_id=current_user.id
                 )
 
                 db.session.add(gasto)
                 registros += 1
 
             except Exception as e:
-                print(
-                    f"Error en fila: {fila}"
-                )
+                print(f"Error en fila: {fila}")
                 print(e)
 
         db.session.commit()
 
-        return (
-            f"Se importaron "
-            f"{registros} registros."
-        )
+        return f"Se importaron {registros} registros."
 
-    return render_template(
-        "importar.html"
-    )
+    return render_template("importar.html")
 
 @app.route("/usuarios")
 @login_required
