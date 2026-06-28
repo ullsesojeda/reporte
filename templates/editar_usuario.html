@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Editar Usuario</title>
+</head>
+<body>
+
+<h2>Editar Usuario</h2>
+
+<form method="POST">
+
+    <p>
+        Usuario<br>
+        <input
+            type="text"
+            name="usuario"
+            value="{{ usuario.usuario }}"
+            required>
+    </p>
+
+    <p>
+        Nombre<br>
+        <input
+            type="text"
+            name="nombre"
+            value="{{ usuario.nombre }}"
+            required>
+    </p>
+
+    <p>
+        Nueva contraseña<br>
+        <input
+            type="password"
+            name="password">
+
+        <br>
+        <small>
+            Déjelo en blanco para conservar la contraseña actual.
+        </small>
+    </p>
+
+    <p>
+        Rol<br>
+        <select name="rol">
+
+            <option
+            value="Administrador"
+            {% if usuario.rol=="Administrador" %}
+            selected
+            {% endif %}>
+                Administrador
+            </option>
+
+            <option
+            value="Usuario"
+            {% if usuario.rol=="Usuario" %}
+            selected
+            {% endif %}>
+                Usuario
+            </option>
+
+        </select>
+    </p>
+
+    <button type="submit">
+        Guardar Cambios
+    </button>
+
+</form>
+
+<br>
+
+<a href="{{ url_for('usuarios') }}">
+    Regresar
+</a>
+
+</body>
+</html>
