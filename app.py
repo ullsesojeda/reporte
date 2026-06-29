@@ -108,7 +108,8 @@ def gastos():
     fecha_fin = request.args.get("fecha_fin")
     responsable = request.args.get("responsable")
     buscar = request.args.get("buscar")
-
+    orden = request.args.get("orden", "fecha_desc")
+    
     consulta = Gasto.query
 
     if fecha_inicio:
@@ -141,9 +142,42 @@ def gastos():
             )
         )
 
-    gastos = consulta.order_by(
-        Gasto.id.desc()
-    ).all()
+    if orden == "fecha_asc":
+        consulta = consulta.order_by(
+        Gasto.fecha.asc()
+    )
+
+    elif orden == "fecha_desc":
+        consulta = consulta.order_by(
+            Gasto.fecha.desc()
+        )
+
+    elif orden == "importe_asc":
+        consulta = consulta.order_by(
+            Gasto.importe.asc()
+        )
+
+    elif orden == "importe_desc":
+        consulta = consulta.order_by(
+            Gasto.importe.desc()
+        )
+
+    elif orden == "responsable_asc":
+        consulta = consulta.order_by(
+            Gasto.responsable.asc()
+        )
+
+    elif orden == "responsable_desc":
+        consulta = consulta.order_by(
+            Gasto.responsable.desc()
+        )
+
+    else:
+        consulta = consulta.order_by(
+            Gasto.id.desc()
+        )
+
+    gastos = consulta.all()
 
     total = sum(g.importe for g in gastos)
     total_registros = len(gastos)
@@ -156,7 +190,8 @@ def gastos():
         fecha_inicio=fecha_inicio,
         fecha_fin=fecha_fin,
         responsable=responsable,
-        buscar=buscar
+        buscar=buscar,
+        orden=orden
     )
 @app.route("/nuevo", methods=["GET", "POST"])
 @login_required
@@ -250,6 +285,7 @@ def exportar_excel():
     fecha_fin = request.args.get("fecha_fin")
     responsable = request.args.get("responsable")
     buscar = request.args.get("buscar")
+    orden = request.args.get("orden", "fecha_desc")
 
     consulta = Gasto.query
 
@@ -283,9 +319,29 @@ def exportar_excel():
             )
         )
 
-    gastos = consulta.order_by(
-        Gasto.id.desc()
-    ).all()
+    if orden == "fecha_asc":
+        consulta = consulta.order_by(Gasto.fecha.asc())
+
+    elif orden == "fecha_desc":
+        consulta = consulta.order_by(Gasto.fecha.desc())
+
+    elif orden == "importe_asc":
+        consulta = consulta.order_by(Gasto.importe.asc())
+
+    elif orden == "importe_desc":
+        consulta = consulta.order_by(Gasto.importe.desc())
+
+    elif orden == "responsable_asc":
+        consulta = consulta.order_by(Gasto.responsable.asc())
+
+    elif orden == "responsable_desc":
+        consulta = consulta.order_by(Gasto.responsable.desc())
+
+    else:
+        consulta = consulta.order_by(Gasto.id.desc())
+
+    gastos = consulta.all()
+
 
     wb = Workbook()
     ws = wb.active
@@ -348,6 +404,7 @@ def exportar_excel():
         download_name=nombre,
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+
 @app.route("/importar_excel", methods=["GET", "POST"])
 @login_required
 def importar_excel():
