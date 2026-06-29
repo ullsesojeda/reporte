@@ -1,189 +1,330 @@
-<nav class="navbar navbar-dark bg-dark mb-4">
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Control de Gastos</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet">
+</head>
+
+<body class="bg-light">
+
+<nav class="navbar navbar-dark bg-dark shadow">
     <div class="container-fluid">
 
-        <span class="navbar-brand">
-            Control de Gastos
+        <span class="navbar-brand fs-4">
+            💰 Control de Gastos
         </span>
 
-        <span class="text-white">
-            {{ current_user.nombre }}
-        </span>
+        <div>
+            <span class="text-white me-3">
+                👤 {{ current_user.nombre }}
+            </span>
 
-        <a
-        class="btn btn-danger"
-        href="{{ url_for('logout') }}">
-            Salir
-        </a>
+            <a
+                class="btn btn-danger"
+                href="{{ url_for('logout') }}">
+                Salir
+            </a>
+        </div>
 
     </div>
 </nav>
-<!DOCTYPE html>
-<html>
-<head>
-    <link
-href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-rel="stylesheet">
-    <title>Gastos</title>
-</head>
+
+<div class="container mt-4">
+
+    <!-- TARJETAS -->
+    <div class="row mb-4">
+
+        <div class="col-md-6">
+            <div class="card border-primary shadow-sm">
+                <div class="card-body text-center">
+                    <h6>Total de Registros</h6>
+                    <h2>{{ total_registros }}</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card border-success shadow-sm">
+                <div class="card-body text-center">
+                    <h6>Importe Total</h6>
+                    <h2>
+                        ${{ "{:,.2f}".format(total) }}
+                    </h2>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- FILTROS -->
+    <div class="card shadow mb-4">
+
+        <div class="card-header">
+            <h5 class="mb-0">
+                🔍 Filtros
+            </h5>
+        </div>
+
+        <div class="card-body">
+
+            <form method="GET">
+
+                <div class="row">
+
+                    <div class="col-md-2 mb-3">
+                        <label>Desde</label>
+
+                        <input
+                            type="date"
+                            name="fecha_inicio"
+                            class="form-control"
+                            value="{{ fecha_inicio or '' }}">
+                    </div>
+
+                    <div class="col-md-2 mb-3">
+                        <label>Hasta</label>
+
+                        <input
+                            type="date"
+                            name="fecha_fin"
+                            class="form-control"
+                            value="{{ fecha_fin or '' }}">
+                    </div>
+
+                    <div class="col-md-2 mb-3">
+                        <label>Responsable</label>
+
+                        <select
+                            name="responsable"
+                            class="form-select">
+
+                            <option value="">
+                                Todos
+                            </option>
+
+                            <option value="ULISES"
+                            {% if responsable=="ULISES" %}
+                            selected
+                            {% endif %}>
+                                ULISES
+                            </option>
+
+                            <option value="TIMO"
+                            {% if responsable=="TIMO" %}
+                            selected
+                            {% endif %}>
+                                TIMO
+                            </option>
+
+                            <option value="OTRO"
+                            {% if responsable=="OTRO" %}
+                            selected
+                            {% endif %}>
+                                OTRO
+                            </option>
+
+                        </select>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <label>Buscar</label>
+
+                        <input
+                            type="text"
+                            name="buscar"
+                            class="form-control"
+                            value="{{ buscar or '' }}">
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <label>Ordenar por</label>
+
+                        <select
+                            name="orden"
+                            class="form-select">
+
+                            <option value="fecha_desc"
+                            {% if orden=='fecha_desc' %}
+                            selected
+                            {% endif %}>
+                                Fecha ↓
+                            </option>
+
+                            <option value="fecha_asc"
+                            {% if orden=='fecha_asc' %}
+                            selected
+                            {% endif %}>
+                                Fecha ↑
+                            </option>
+
+                            <option value="importe_desc"
+                            {% if orden=='importe_desc' %}
+                            selected
+                            {% endif %}>
+                                Importe ↓
+                            </option>
+
+                            <option value="importe_asc"
+                            {% if orden=='importe_asc' %}
+                            selected
+                            {% endif %}>
+                                Importe ↑
+                            </option>
+
+                            <option value="responsable_asc"
+                            {% if orden=='responsable_asc' %}
+                            selected
+                            {% endif %}>
+                                Responsable A-Z
+                            </option>
+
+                            <option value="responsable_desc"
+                            {% if orden=='responsable_desc' %}
+                            selected
+                            {% endif %}>
+                                Responsable Z-A
+                            </option>
+
+                        </select>
+                    </div>
+
+                </div>
+
+                <button
+                    type="submit"
+                    class="btn btn-primary">
+                    Filtrar
+                </button>
+
+                <a
+                    href="{{ url_for('gastos') }}"
+                    class="btn btn-secondary">
+                    Limpiar
+                </a>
+
+            </form>
+
+        </div>
+
+    </div>
+
+    <!-- BOTONES -->
+    <div class="mb-4">
+
+        <a
+            href="{{ url_for('nuevo') }}"
+            class="btn btn-success">
+            ➕ Nuevo Gasto
+        </a>
+
+        <a
+            href="{{ url_for(
+                'exportar_excel',
+                fecha_inicio=fecha_inicio,
+                fecha_fin=fecha_fin,
+                responsable=responsable,
+                buscar=buscar
+            ) }}"
+            class="btn btn-primary">
+            📥 Exportar Excel
+        </a>
+
+        <a
+            href="{{ url_for('importar_excel') }}"
+            class="btn btn-warning">
+            📤 Importar Excel
+        </a>
+
+        {% if current_user.rol == "Administrador" %}
+        <a
+            href="{{ url_for('usuarios') }}"
+            class="btn btn-info">
+            👥 Usuarios
+        </a>
+        {% endif %}
+
+    </div>
+
+    <!-- TABLA -->
+    <div class="card shadow">
+
+        <div class="card-body">
+
+            <div class="table-responsive">
+
+                <table class="table table-striped table-hover table-bordered">
+
+                    <thead class="table-dark">
+
+                    <tr>
+                        <th>ID</th>
+                        <th>Fecha</th>
+                        <th>Pagado a</th>
+                        <th>Concepto</th>
+                        <th>Responsable</th>
+                        <th>Importe</th>
+                        <th class="text-center">
+                            Acciones
+                        </th>
+                    </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                    {% for g in gastos %}
+
+                    <tr>
+
+                        <td>{{ g.id }}</td>
+                        <td>{{ g.fecha.strftime('%d/%m/%Y') }}</td>
+                        <td>{{ g.pagado_a }}</td>
+                        <td>{{ g.concepto }}</td>
+                        <td>{{ g.responsable }}</td>
+                        <td>
+                            ${{ "{:,.2f}".format(g.importe) }}
+                        </td>
+
+                        <td class="text-center">
+
+                            <a
+                                href="{{ url_for('editar_gasto', id=g.id) }}"
+                                class="btn btn-sm btn-primary">
+                                Editar
+                            </a>
+
+                            {% if current_user.rol == "Administrador" %}
+
+                            <a
+                                href="{{ url_for('eliminar_gasto', id=g.id) }}"
+                                class="btn btn-sm btn-danger"
+                                onclick="return confirm('¿Está seguro de eliminar este registro?')">
+                                Eliminar
+                            </a>
+
+                            {% endif %}
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
 </div>
-<body>
-<div class="container mt-4"></div>
-<h2>Control de Gastos</h2>
-
-<form method="GET">
-
-    Desde:
-    <input
-        type="date"
-        name="fecha_inicio"
-        value="{{ fecha_inicio or '' }}">
-
-    Hasta:
-    <input
-        type="date"
-        name="fecha_fin"
-        value="{{ fecha_fin or '' }}">
-
-    Responsable:
-    <select name="responsable">
-
-        <option value="">Todos</option>
-
-        <option value="ULISES"
-            {% if responsable=="ULISES" %}
-            selected
-            {% endif %}>
-            ULISES
-        </option>
-
-        <option value="TIMO"
-            {% if responsable=="TIMO" %}
-            selected
-            {% endif %}>
-            TIMO
-        </option>
-
-        <option value="OTRO"
-            {% if responsable=="OTRO" %}
-            selected
-            {% endif %}>
-            OTRO
-        </option>
-
-    </select>
-
-    Buscar:
-    <input
-        type="text"
-        name="buscar"
-        value="{{ buscar or '' }}">
-
-    <button type="submit">
-        Filtrar
-    </button>
-
-    <a href="{{ url_for('gastos') }}">
-        Limpiar
-    </a>
-
-</form>
-
-    <br>
-
-    <button
-    onclick="window.location.href='{{ url_for(
-        'exportar_excel',
-        fecha_inicio=fecha_inicio,
-        fecha_fin=fecha_fin,
-        responsable=responsable,
-        buscar=buscar
-    ) }}'">
-        Exportar a Excel
-    </button>
-    <button
-    onclick="window.location.href='{{ url_for("importar_excel") }}'">
-    Importar desde Excel
-</button>
-
-{% if current_user.rol == "Administrador" %}
-<button
-onclick="window.location.href='{{ url_for("usuarios") }}'">
-    Usuarios
-</button>
-{% endif %}
-
-    <br><br>
-
-<br>
-
-<p>
-
-<a href="/nuevo">
-Nuevo Gasto
-</a>
-
-|
-
-<a href="/logout">
-Salir
-</a>
-
-</p>
-
-<table class="table table-striped table-hover table-bordered">
-
-<tr>
-
-<tr>
-    <th>ID</th>
-    <th>Fecha</th>
-    <th>Pagado a</th>
-    <th>Concepto</th>
-    <th>Responsable</th>
-    <th>Importe</th>
-    <th>Acciones</th>
-</tr>
-
-{% for g in gastos %}
-
-<tr>
-
-<td>{{ g.id }}</td>
-<td>{{ g.fecha.strftime('%d/%m/%Y') }}</td>
-<td>{{ g.pagado_a }}</td>
-<td>{{ g.concepto }}</td>
-<td>{{ g.responsable }}</td>
-<td>${{ "{:,.2f}".format(g.importe) }}</td>
-
-<td>
-
-    <a href="{{ url_for('editar_gasto', id=g.id) }}">
-        Editar
-    </a>
-
-    {% if current_user.rol == "Administrador" %}
-    |
-    <a
-        href="{{ url_for('eliminar_gasto', id=g.id) }}"
-        onclick="return confirm('¿Está seguro de eliminar este registro?')">
-        Eliminar
-    </a>
-    {% endif %}
-
-</td>
-    {% endfor %}
-
-    </table>
-
-    <h3>
-Total de registros:
-{{ total_registros }}
-</h3>
-
-<h3>
-Importe total:
-${{ "{:,.2f}".format(total) }}
-</h3>
 
 </body>
 </html>
