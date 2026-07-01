@@ -37,6 +37,12 @@ class Gasto(db.Model):
         default=datetime.now
     )
 
+    comprobante = db.Column(
+    db.Boolean,
+    default=False,
+    nullable=False
+)
+
     usuario_id = db.Column(
         db.Integer,
         db.ForeignKey('usuarios.id')

@@ -109,24 +109,25 @@ def gastos():
     responsable = request.args.get("responsable")
     buscar = request.args.get("buscar")
     orden = request.args.get("orden", "fecha_desc")
-    
+    estado = request.args.get("estado", "todos")
+
     consulta = Gasto.query
 
     if fecha_inicio:
-       consulta = consulta.filter(
-    Gasto.fecha >= datetime.strptime(
-        fecha_inicio,
-        "%Y-%m-%d"
-    ).date()
-) 
+        consulta = consulta.filter(
+            Gasto.fecha >= datetime.strptime(
+                fecha_inicio,
+                "%Y-%m-%d"
+            ).date()
+        )
 
     if fecha_fin:
         consulta = consulta.filter(
-        Gasto.fecha <= datetime.strptime(
-            fecha_fin,
-            "%Y-%m-%d"
-        ).date()
-    )
+            Gasto.fecha <= datetime.strptime(
+                fecha_fin,
+                "%Y-%m-%d"
+            ).date()
+        )
 
     if responsable:
         consulta = consulta.filter(
@@ -142,56 +143,108 @@ def gastos():
             )
         )
 
+    # -----------------------------
+    # FILTRO POR ESTADO
+    # -----------------------------
+
+    if estado == "pendientes":
+        consulta = consulta.filter(
+            Gasto.comprobante == False
+        )
+
+    elif estado == "elaborados":
+        consulta = consulta.filter(
+            Gasto.comprobante == True
+        )
+
+    # -----------------------------
+    # ORDENAMIENTO
+    # -----------------------------
+
     if orden == "fecha_asc":
+
         consulta = consulta.order_by(
-        Gasto.fecha.asc()
-    )
+            Gasto.fecha.asc()
+        )
 
     elif orden == "fecha_desc":
+
         consulta = consulta.order_by(
             Gasto.fecha.desc()
         )
 
     elif orden == "importe_asc":
+
         consulta = consulta.order_by(
             Gasto.importe.asc()
         )
 
     elif orden == "importe_desc":
+
         consulta = consulta.order_by(
             Gasto.importe.desc()
         )
 
     elif orden == "responsable_asc":
+
         consulta = consulta.order_by(
             Gasto.responsable.asc()
         )
 
     elif orden == "responsable_desc":
+
         consulta = consulta.order_by(
             Gasto.responsable.desc()
         )
 
     else:
+
         consulta = consulta.order_by(
             Gasto.id.desc()
         )
 
     gastos = consulta.all()
 
-    total = sum(g.importe for g in gastos)
+    total = sum(
+        g.importe for g in gastos
+    )
+
     total_registros = len(gastos)
 
+    elaborados = Gasto.query.filter_by(
+        comprobante=True
+    ).count()
+
+    pendientes = Gasto.query.filter_by(
+        comprobante=False
+    ).count()
+
     return render_template(
+
         "index.html",
+
         gastos=gastos,
+
         total=total,
+
         total_registros=total_registros,
+
+        elaborados=elaborados,
+
+        pendientes=pendientes,
+
         fecha_inicio=fecha_inicio,
+
         fecha_fin=fecha_fin,
+
         responsable=responsable,
+
         buscar=buscar,
-        orden=orden
+
+        orden=orden,
+
+        estado=estado
+
     )
 @app.route("/nuevo", methods=["GET", "POST"])
 @login_required
@@ -262,7 +315,28 @@ def editar_gasto(id):
         "editar.html",
         gasto=gasto
     )
+@app.route("/cambiar_comprobante/<int:id>")
+@login_required
+def cambiar_comprobante(id):
 
+    gasto = Gasto.query.get_or_404(id)
+
+    # Cambia el estado
+    gasto.comprobante = not gasto.comprobante
+
+    db.session.commit()
+
+    return redirect(
+        url_for(
+            "gastos",
+            fecha_inicio=request.args.get("fecha_inicio"),
+            fecha_fin=request.args.get("fecha_fin"),
+            responsable=request.args.get("responsable"),
+            buscar=request.args.get("buscar"),
+            orden=request.args.get("orden"),
+            estado=request.args.get("estado")
+        )
+    )
 @app.route("/eliminar/<int:id>")
 @login_required
 def eliminar_gasto(id):
@@ -286,6 +360,7 @@ def exportar_excel():
     responsable = request.args.get("responsable")
     buscar = request.args.get("buscar")
     orden = request.args.get("orden", "fecha_desc")
+    estado = request.args.get("estado", "todos")
 
     consulta = Gasto.query
 
@@ -318,6 +393,18 @@ def exportar_excel():
                 Gasto.observaciones.contains(buscar)
             )
         )
+
+    # Filtrar por estado
+
+    if estado == "pendientes":
+        consulta = consulta.filter(
+        Gasto.comprobante == False
+    )
+
+    elif estado == "elaborados":
+        consulta = consulta.filter(
+        Gasto.comprobante == True
+    )   
 
     if orden == "fecha_asc":
         consulta = consulta.order_by(Gasto.fecha.asc())
@@ -354,7 +441,8 @@ def exportar_excel():
         "Concepto",
         "Observaciones",
         "Responsable",
-        "Importe"
+        "Importe",
+        "Estado"
     ]
 
     ws.append(encabezados)
@@ -373,7 +461,8 @@ def exportar_excel():
             g.concepto,
             g.observaciones,
             g.responsable,
-            g.importe
+            g.importe,
+            "ELABORADO" if g.comprobante else "PENDIENTE"
         ])
 
         total += g.importe
@@ -579,5 +668,21 @@ def eliminar_usuario(id):
     return redirect(url_for("usuarios"))
 
 if __name__ == "__main__":
-    app.run(debug=True)
 
+    with app.app_context():
+
+        db.create_all()
+
+        if not Usuario.query.filter_by(usuario="admin").first():
+
+            admin = Usuario(
+                usuario="admin",
+                nombre="Administrador",
+                rol="Administrador",
+                password=generate_password_hash("admin123")
+            )
+
+            db.session.add(admin)
+            db.session.commit()
+
+    app.run(debug=True)

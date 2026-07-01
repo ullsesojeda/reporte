@@ -59,6 +59,33 @@
         </div>
 
     </div>
+    <div class="col-md-3">
+    <div class="card border-danger shadow-sm">
+        <div class="card-body text-center">
+
+            <h6>Pendientes</h6>
+
+            <h2 class="text-danger">
+                {{ pendientes }}
+            </h2>
+
+        </div>
+    </div>
+</div>
+
+<div class="col-md-3">
+    <div class="card border-success shadow-sm">
+        <div class="card-body text-center">
+
+            <h6>Elaborados</h6>
+
+            <h2 class="text-success">
+                {{ elaborados }}
+            </h2>
+
+        </div>
+    </div>
+</div>
 
     <!-- FILTROS -->
     <div class="card shadow mb-4">
@@ -193,7 +220,38 @@
                     </div>
 
                 </div>
+                    <div class="col-md-3 mb-3">
 
+    <label>Estado</label>
+
+    <select
+        name="estado"
+        class="form-select">
+
+        <option value="todos"
+        {% if estado=="todos" %}
+        selected
+        {% endif %}>
+            Todos
+        </option>
+
+        <option value="pendientes"
+        {% if estado=="pendientes" %}
+        selected
+        {% endif %}>
+            Pendientes
+        </option>
+
+        <option value="elaborados"
+        {% if estado=="elaborados" %}
+        selected
+        {% endif %}>
+            Elaborados
+        </option>
+
+    </select>
+
+</div>  
                 <button
                     type="submit"
                     class="btn btn-primary">
@@ -265,8 +323,13 @@
                         <th>Fecha</th>
                         <th>Pagado a</th>
                         <th>Concepto</th>
+                        <th>Observaciones</th>
                         <th>Responsable</th>
                         <th>Importe</th>
+                        <th class="text-center">
+                            Estado
+                        </th>
+
                         <th class="text-center">
                             Acciones
                         </th>
@@ -278,16 +341,41 @@
 
                     {% for g in gastos %}
 
-                    <tr>
-
+                    <tr
+                    {% if g.comprobante %}
+                    class="table-success"
+                    {% else %}
+                    class="table-danger"
+                    {% endif %}
+                    >
+                    
                         <td>{{ g.id }}</td>
                         <td>{{ g.fecha.strftime('%d/%m/%Y') }}</td>
                         <td>{{ g.pagado_a }}</td>
                         <td>{{ g.concepto }}</td>
+                        <td>{{ g.observaciones }}</td>
                         <td>{{ g.responsable }}</td>
                         <td>
                             ${{ "{:,.2f}".format(g.importe) }}
                         </td>
+
+                        <td class="text-center">
+
+                        {% if g.comprobante %}
+
+                        <span class="badge bg-success">
+                            ✔ Elaborado
+                        </span>
+
+                        {% else %}
+
+                        <span class="badge bg-danger">
+                            Pendiente
+                        </span>
+
+                        {% endif %}
+
+                    </td>
 
                         <td class="text-center">
 
@@ -297,6 +385,30 @@
                                 Editar
                             </a>
 
+                            <a
+                            href="{{ url_for(
+                            'cambiar_comprobante',
+                            id=g.id,
+                            fecha_inicio=fecha_inicio,
+                            fecha_fin=fecha_fin,
+                            responsable=responsable,
+                            buscar=buscar,
+                            orden=orden,
+                            estado=estado
+                            ) }}"
+                            class="btn btn-sm btn-warning">
+
+                            {% if g.comprobante %}
+
+                            ↩ Pendiente
+
+                            {% else %}
+
+                            ✔ Elaborado
+
+                            {% endif %}
+
+                            </a>
                             {% if current_user.rol == "Administrador" %}
 
                             <a
