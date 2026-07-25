@@ -135,13 +135,18 @@ def gastos():
         )
 
     if buscar:
-        consulta = consulta.filter(
-            or_(
-                Gasto.pagado_a.contains(buscar),
-                Gasto.concepto.contains(buscar),
-                Gasto.observaciones.contains(buscar)
-            )
-        )
+
+        filtros = [
+            Gasto.pagado_a.contains(buscar),
+            Gasto.concepto.contains(buscar),
+            Gasto.observaciones.contains(buscar)
+        ]
+
+    # Buscar también por ID si es un número
+        if buscar.isdigit():
+            filtros.append(Gasto.id == int(buscar))
+
+        consulta = consulta.filter(or_(*filtros))   
 
     # -----------------------------
     # FILTRO POR ESTADO
@@ -358,7 +363,7 @@ def exportar_excel():
     fecha_inicio = request.args.get("fecha_inicio")
     fecha_fin = request.args.get("fecha_fin")
     responsable = request.args.get("responsable")
-    buscar = request.args.get("buscar")
+    buscar = request.args.get("buscar", "").strip()
     orden = request.args.get("orden", "fecha_desc")
     estado = request.args.get("estado", "todos")
 
