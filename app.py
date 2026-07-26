@@ -15,6 +15,7 @@ from flask_login import (
     current_user
 )
 
+from flask_sqlalchemy.query import Query
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from config import Config
@@ -201,6 +202,12 @@ def gastos():
         consulta = consulta.order_by(
             Gasto.responsable.desc()
         )
+
+    elif orden == "id_desc":
+        consulta = consulta.order_by(Gasto.id.desc())
+
+    elif orden == "id_asc":
+        consulta: Query = consulta.order_by(Gasto.id.asc())
 
     else:
 
