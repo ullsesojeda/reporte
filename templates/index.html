@@ -216,9 +216,13 @@
                                 Responsable Z-A
                             </option>
 
-                            <option value="id" {% if orden == "id" %}selected{% endif %}>
-    ID
-</option>
+                            <option value="id_desc" {% if orden == "id_desc" %}selected{% endif %}>
+                            ID (Mayor a menor)
+                            </option>
+
+                            <option value="id_asc" {% if orden == "id_asc" %}selected{% endif %}>
+                            ID (Menor a mayor)
+                            </option>
 
                         </select>
                     </div>
