@@ -21,12 +21,13 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from config import Config
 from models import db, Usuario, Gasto
 from datetime import datetime
-from sqlalchemy import or_
+from sqlalchemy import or_, text
 from openpyxl import Workbook
 from openpyxl import load_workbook
 from openpyxl.styles import Font
 from flask import send_file
 from io import BytesIO
+from sqlalchemy import text
 import os
 
 app = Flask(__name__)
@@ -513,6 +514,7 @@ def importar_excel():
     if request.method == "POST":
 
         archivo = request.files["archivo"]
+        modo = request.form.get("modo", "agregar")
 
         if archivo.filename == "":
             return "No seleccionó ningún archivo."
@@ -522,70 +524,155 @@ def importar_excel():
 
         registros = 0
 
+        # ==========================================
+        # RESTAURAR RESPALDO
+        # ==========================================
+        if modo == "reemplazar":
+
+            db.session.query(Gasto).delete()
+            db.session.commit()
+
+        # ==========================================
+        # RECORRER EXCEL
+        # ==========================================
+
         for fila in ws.iter_rows(min_row=2, values_only=True):
 
-            print(fila)
-
-            if not fila:
+            if fila is None:
                 continue
+
+            fila = list(fila)
+
+            while len(fila) < 8:
+                fila.append(None)
 
             try:
 
+                id_excel = fila[0]
                 fecha = fila[1]
+                pagado_a = fila[2]
+                concepto = fila[3]
+                observaciones = fila[4]
+                responsable = fila[5]
+                importe = fila[6]
+                comprobante = fila[7]
+
+                # -------------------------
+                # Fecha
+                # -------------------------
 
                 if fecha is None:
                     continue
 
-                if isinstance(fecha, str):
+                if isinstance(fecha, datetime):
+                    fecha = fecha.date()
 
-                    formatos = [
-                        "%d/%m/%Y",
-                        "%Y-%m-%d"
-                    ]
+                elif isinstance(fecha, str):
 
-                    fecha_convertida = None
+                    convertido = None
 
-                    for formato in formatos:
+                    for formato in ("%d/%m/%Y", "%Y-%m-%d"):
+
                         try:
-                            fecha_convertida = datetime.strptime(
+                            convertido = datetime.strptime(
                                 fecha,
                                 formato
                             ).date()
                             break
+
                         except ValueError:
                             pass
 
-                    if fecha_convertida is None:
-                        print(
-                            f"No se pudo convertir la fecha: {fecha}"
-                        )
+                    if convertido is None:
                         continue
 
-                    fecha = fecha_convertida
+                    fecha = convertido
 
-                elif isinstance(fecha, datetime):
-                    fecha = fecha.date()
+                # -------------------------
+                # Importe
+                # -------------------------
 
-                gasto = Gasto(
-                    fecha=fecha,
-                    pagado_a=fila[2] or "",
-                    concepto=fila[3] or "",
-                    observaciones=fila[4] or "",
-                    responsable=fila[5] or "",
-                    importe=float(fila[6] or 0),
-                    usuario_id=current_user.id
-                )
+                if importe is None:
+
+                    importe = 0
+
+                elif isinstance(importe, str):
+
+                    importe = importe.replace(",", ".").strip()
+
+                    try:
+                        importe = float(importe)
+                    except:
+                        importe = 0
+
+                else:
+
+                    importe = float(importe)
+
+                # -------------------------
+                # Comprobante
+                # -------------------------
+
+                if isinstance(comprobante, str):
+
+                    comprobante = comprobante.strip().lower()
+
+                    comprobante = comprobante in (
+                        "1",
+                        "true",
+                        "si",
+                        "sí",
+                        "yes",
+                        "elaborado"
+                    )
+
+                else:
+
+                    comprobante = bool(comprobante)
+
+                # -------------------------
+                # Crear gasto
+                # -------------------------
+
+                if modo == "reemplazar" and id_excel is not None:
+
+                    gasto = Gasto(
+                        id=int(id_excel),
+                        fecha=fecha,
+                        pagado_a=pagado_a,
+                        concepto=concepto,
+                        observaciones=observaciones,
+                        responsable=responsable,
+                        importe=importe,
+                        comprobante=comprobante,
+                        usuario_id=current_user.id
+                    )
+
+                else:
+
+                    gasto = Gasto(
+                        fecha=fecha,
+                        pagado_a=pagado_a,
+                        concepto=concepto,
+                        observaciones=observaciones,
+                        responsable=responsable,
+                        importe=importe,
+                        comprobante=comprobante,
+                        usuario_id=current_user.id
+                    )
 
                 db.session.add(gasto)
+
                 registros += 1
 
             except Exception as e:
+
                 print(f"Error en fila: {fila}")
                 print(e)
 
         db.session.commit()
 
-        return f"Se importaron {registros} registros."
+        return f"Se importaron correctamente {registros} registros."
 
     return render_template("importar.html")
 
