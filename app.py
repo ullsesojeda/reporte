@@ -33,7 +33,11 @@ import os
 app = Flask(__name__)
 app.config.from_object(Config)
 
-os.makedirs("database", exist_ok=True)
+if os.path.exists("/montesion/gastos"):
+    os.makedirs("/montesion/gastos", exist_ok=True)
+else:
+    os.makedirs("database", exist_ok=True)
+
 os.makedirs("backups", exist_ok=True)
 os.makedirs("exports", exist_ok=True)
 os.makedirs("uploads", exist_ok=True)
