@@ -44,10 +44,28 @@ os.makedirs("uploads", exist_ok=True)
 
 db.init_app(app)
 
+# ===========================================
+# CREAR TABLAS AUTOMÁTICAMENTE
+# ===========================================
+with app.app_context():
+
+    db.create_all()
+
+    if not Usuario.query.filter_by(usuario="admin").first():
+
+        admin = Usuario(
+            usuario="admin",
+            nombre="Administrador",
+            rol="Administrador",
+            password=generate_password_hash("admin123")
+        )
+
+        db.session.add(admin)
+        db.session.commit()
+
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
-
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -771,21 +789,4 @@ def eliminar_usuario(id):
     return redirect(url_for("usuarios"))
 
 if __name__ == "__main__":
-
-    with app.app_context():
-
-        db.create_all()
-
-        if not Usuario.query.filter_by(usuario="admin").first():
-
-            admin = Usuario(
-                usuario="admin",
-                nombre="Administrador",
-                rol="Administrador",
-                password=generate_password_hash("admin123")
-            )
-
-            db.session.add(admin)
-            db.session.commit()
-
     app.run(debug=True)
