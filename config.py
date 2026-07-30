@@ -2,13 +2,16 @@ import os
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
-# Base de datos local o en Render
-if os.path.exists("/montesion/gastos"):
-    DATABASE_PATH = "/montesion/gastos/gastos.db"
-else:
-    DATABASE_PATH = os.path.join(BASE_DIR, "database", "gastos.db")
 
 class Config:
-    SECRET_KEY = "cambia_esta_clave_super_secreta"
-    SQLALCHEMY_DATABASE_URI = "sqlite:///" + DATABASE_PATH
+    SECRET_KEY = "cambia_esta_clave_por_una_muy_segura"
+
+    SQLALCHEMY_DATABASE_URI = (
+        f"sqlite:///{os.path.join(BASE_DIR, 'instance', 'asistencia.db')}"
+    )
+
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    UPLOAD_FOLDER = os.path.join(BASE_DIR, "static", "fotos")
+
+    MAX_CONTENT_LENGTH = 5 * 1024 * 1024  # 5 MB
